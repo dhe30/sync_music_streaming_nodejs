@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Chunk Streaming</title>
+</head>
+<body>
+  <h1>Streaming Audio in Chunks</h1>
+  <audio id="audioPlayer" controls></audio>
+  <button type="button" onclick="update()">moby dick</button>
+  <button type="button" onclick="createStation()">create station</button>
+  <audio id="audio" src="/stream" type="audio/mpeg" preload="none" controls autoplay></audio>
+  <audio id="audio1" src="/stream" type="audio/mpeg" preload="none" controls autoplay></audio>
+  <audio id="audio3" src="/stream" type="audio/mpeg" preload="none" controls autoplay></audio>
+  <button type="button" onclick="moby()">Moby</button>
+  <canvas class="visualizer" width="640" height="100"></canvas>
+  <div id="song-container"></div>
+  <div id="playlist-container">Playlists</div>
+
+  <script type="text/javascript" src="static/load.js"></script>
+  <script>
+    // JavaScript to request audio stream from the server
+    const audioPlayer = document.getElementById('audioPlayer');
+    
+    // Set the source to the chunked stream endpoint
+    audioPlayer.src = '/audio/cha';
+    
+    // Load the audio player
+    audioPlayer.load();
+    audioPlayer.play();
+    function update() {
+        const audioPlayer = document.getElementById('audioPlayer');
+        audioPlayer.src = '/audio/sa';
+        audioPlayer.load();
+
+    }
+    async function moby() {
+      try {
+        const response = await fetch("http://localhost:3000/moby");
+        if (!response.ok) {
+          throw new Error(`Response status: ${response.status}`);
+        }
+
+        const json = await response.json();
+        console.log(json);
+      } catch (error) {
+        console.error(error.message);
+      }
+    }
+    async function createStation() {
+      try {
+        const response = await fetch("http://localhost:3000/createStation");
+        if (!response.ok) {
+          throw new Error(`Response status: ${response.status}`);
+        }
+
+        const json = await response.json();
+        console.log(json);
+      } catch (error) {
+        console.error(error.message);
+      }
+    }
+    function makeDistortionCurve(amount) {
+        let k = typeof amount === "number" ? amount : 50,
+        n_samples = 44100,
+        curve = new Float32Array(n_samples),
+        deg = Math.PI / 180,
+        i = 0,
+        x;
+        for (; i < n_samples; ++i) {
+        x = (i * 2) / n_samples - 1;
+        curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+    }
+    const audioCtx = new AudioContext();
+    audioPlayer.onplay = () => {
+        audioCtx.resume()
+        draw();
+    };
+    const source = audioCtx.createMediaElementSource(audioPlayer);
+
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    let bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    // const distortion = audioCtx.createWaveShaper();
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    
+    const canvas = document.querySelector(".visualizer");
+    const canvasCtx = canvas.getContext("2d");
+    const WIDTH = canvas.width;
+    const HEIGHT = canvas.height;
+    canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+    function draw() {
+        bufferLength = analyser.fftSize;
+        const drawVisual = requestAnimationFrame(
+            draw
+        );
+        analyser.getByteTimeDomainData(dataArray);
+        canvasCtx.fillStyle = "rgb(200 200 200)";
+    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+    canvasCtx.lineWidth = 2;
+canvasCtx.strokeStyle = "rgb(0 0 0)";
+canvasCtx.beginPath();
+const sliceWidth = (WIDTH * 1.0) / bufferLength;
+let x = 0;
+for (let i = 0; i < bufferLength; i++) {
+  const v = dataArray[i] / 128.0;
+  const y = (v * HEIGHT) / 2;
+
+  if (i === 0) {
+    canvasCtx.moveTo(x, y);
+  } else {
+    canvasCtx.lineTo(x, y);
+  }
+
+  x += sliceWidth;
+  
+}
+canvasCtx.lineTo(WIDTH, HEIGHT / 2);
+  canvasCtx.stroke();
+
+// window.addEventListener('click', function (e) {
+//     console.log("ajsh")
+//     audioCtx.resume().then(() => {
+//             source.start(0);
+//        });
+    
+// })
+
+    }
+
+    // analyser.getByteTimeDomainData(dataArray);
+    // distortion.connect(audioCtx.destination);
+    // fetch('/audio', {
+    //     headers: {
+    //         'Accept': 'audio/mpeg',
+    //         'Range': 'bytes=0-1023'
+    //     }})
+    //     .then(response => {response.text(); console.log(response)})
+    //     .then(text => console.log(text))
+
+  </script>
+</body>
+</html>
