@@ -24,15 +24,24 @@ app.use(cors());
 app.use('/static', express.static(path.join(__dirname)))
 app.use('/playlist', playlistRoutes);
 await db.initialize();
-// await db.upload_song({
-//     title: 'Hot to go',
-//     artist: 'Chappel Roan',
-//     date: new Date().toISOString(),
-//     thumbnail: '',
-//     path: path.join(__dirname, "audio","sa.mp3")
-// });
-// await db.new_playlist({name: 'playlist1'});
-// 8c8a0439-cd8c-4254-af18-d9a37a8dde8b
+// let arr = [];
+// for (let i = 0; i < 10; i++) {
+//     let resp = await db.upload_song({
+//         title: "test1",
+//         artist: "test artist1",
+//         date: new Date().toISOString(),
+//         thumbnail: null,
+//         path: null
+//     })
+//     arr.push(resp.id);
+// }
+
+// arr.map(async (id) => {
+//     await db.upload_song_to_playlist({playlist_id: '8c8a0439-cd8c-4254-af18-d9a37a8dde8b', song_id: id})
+// })
+
+// live station 13635a56-e871-479f-a716-cd0e50b05c91
+
 app.get("/", (req,res)=>{
     res.sendFile("index.html",{root: '.'})
 })

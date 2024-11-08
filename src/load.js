@@ -67,6 +67,42 @@ document.addEventListener('DOMContentLoaded', () => {
         return div;
     };
 
+    const createAddQueue = (song, playlist_id) => {
+        console.log(song);
+        const div = document.createElement('div');
+        const head = document.createElement('h2');
+        const addToQueue = document.createElement('button');
+
+        addToQueue.setAttribute('data-id', song.id);
+        addToQueue.setAttribute('data-playlist-id', playlist_id);
+
+        addToQueue.onclick = () => addQueue(song.id, playlist_id)
+        head.textContent = song.title + " " + song.id;
+        addToQueue.textContent = `ADD to queue`;
+        div.appendChild(head);
+        div.appendChild(addToQueue);
+        // button.onclick = () => window.location.href = song.url;
+        return div;
+    };
+
+    const addQueue = async (sid, pid) => {
+        fetch('http://localhost:3000/playlist/test_queue', {
+            method: "POST", 
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                song_id: sid,
+                playlist_id: pid
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("success", data);
+        })
+        .catch(error => console.error('Error fetching songs:', error));
+    }
+
     fetch('http://localhost:3000/playlist/test_playlist_all') 
         .then(response => response.json())
         .then(playlists => {
@@ -83,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(songs => {
                     songs.forEach(song => {
                         console.log(song)
-                        const songButton = createSongButton(song);
+                        const songButton = createAddQueue(song, playlist.id);
                         playlistDiv.appendChild(songButton);
                         playlistsCo.appendChild(playlistDiv);
                     });
