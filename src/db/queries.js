@@ -35,6 +35,7 @@ const initialize = async () => {
             date DATE,
             thumbnail TEXT
         );
+        ALTER TABLE playlist ADD COLUMN station_id UUID;
     `;
     const createPlaylistSongs = `
         CREATE TABLE IF NOT EXISTS playlist_songs (
@@ -232,6 +233,27 @@ const get_next_in_queue = async ({playlist_id, user_token}) => {
     }
 }
 
+const get_playlist = async ({id}) => {
+    const playlist = `
+        SELECT * from playlist 
+        WHERE id = $1;
+    `;
+    const result = await db.query(playlist, [id]);
+    return result.rows[0];
+}
+
+const updateStation = async ({playlist_id}) => {
+    const makeStation = `
+        UPDATE playlist 
+        SET station_id = gen_random_uuid()
+        WHERE id = $1
+        RETURNING *
+        ;
+    `;
+    const result = await db.query(makeStation, [playlist_id]);
+    return result.rows[0];
+}
+
 export default {
     initialize,
     new_playlist,
@@ -242,5 +264,7 @@ export default {
     get_all_playlists,
     get_all_queue,
     test_queue,
-    get_next_in_queue
+    get_next_in_queue,
+    get_playlist,
+    updateStation
 }
