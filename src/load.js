@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-
     console.log("gdtevdebd");
     const container = document.getElementById('song-container');
+    const audio1Player = document.getElementById('audio1');
+
 
     // Function to create a button for each song
     const createSongButton = (song) => {
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // }
 
     // Fetch songs from the API
-    fetch('http://localhost:3000/playlist/test_songs') 
+    fetch('http://localhost:3000/playlist/test_songs')
         .then(response => response.json())
         .then(songs => {
             songs.forEach(song => {
@@ -61,11 +62,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // station.onclick = () => add(addToPlaylist.getAttribute('data-id'), '8c8a0439-cd8c-4254-af18-d9a37a8dde8b')
         head.textContent = playlist.name + " " + playlist.id;
         station.textContent = `station`;
+        station.onclick = () => creator(station.getAttribute('data-id'));
         div.appendChild(head);
         div.appendChild(station);
         // button.onclick = () => window.location.href = song.url;
         return div;
     };
+
+    const creator = async (pid) => {
+        fetch('http://localhost:3000/stream/createStation', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                id: pid
+            })
+        })
+        .then (res => res.json())
+        .then (data => {
+            console.log("ahseub", data);
+            audio1Player.src = `/stream/next/${pid}`;
+            audio1Player.load();
+            audio1Player.play();
+        })
+        .catch(error => console.error('Error sttaion:', error));
+    }
 
     const createAddQueue = (song, playlist_id) => {
         console.log(song);

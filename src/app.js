@@ -14,6 +14,7 @@ import { dirname } from 'path';
 import 'dotenv/config';
 import db from './db/queries.js';
 import playlistRoutes from "./routes/playlist.js";
+import streamRoutes from "./routes/stream.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,95 +24,24 @@ const app = express();
 app.use(cors());
 app.use('/static', express.static(path.join(__dirname)))
 app.use('/playlist', playlistRoutes);
+app.use('/stream', streamRoutes);
 await db.initialize();
-// let arr = [];
-// for (let i = 0; i < 10; i++) {
-//     let resp = await db.upload_song({
-//         title: "test1",
-//         artist: "test artist1",
-//         date: new Date().toISOString(),
-//         thumbnail: null,
-//         path: null
-//     })
-//     arr.push(resp.id);
-// }
 
-// arr.map(async (id) => {
-//     await db.upload_song_to_playlist({playlist_id: '8c8a0439-cd8c-4254-af18-d9a37a8dde8b', song_id: id})
-// })
 
 // live station 13635a56-e871-479f-a716-cd0e50b05c91
 
 app.get("/", (req,res)=>{
     res.sendFile("index.html",{root: '.'})
 })
-app.get("/stream", (req, res) => {
-    //only attach this to a audio once a button has been clicked
-    //i.e. audio src = stream with ID PARAMS to pass into generate stream 
 
-    //id should be user token retrieved from cookies
 
-    const { id, stream } = generateStream() // We create a new stream for each new client
-    res.setHeader("Content-Type", "audio/mpeg")
-    res.setHeader("Transfer-Encoding", "chunked")
-    stream.pipe(res) // the client stream is pipe to the response
-    res.on('close', () => { 
-        stations.get(32).streams.delete(id) 
-        console.log("deleted: " + id)
-    })
-})
-
-//callback to check size of station streams, if 0, delete
-const deleteStream = (stationId, streamId) => {
-    //destroy stream as well!!!!!!!!!
-    stations.get(stationId).streams.delete(streamId);
-}
-const generateStream = () => {
-    const id = Math.random().toString(36).slice(2);
-    const stream = new PassThrough()
-    stations.get(32).streams.set(id, stream)
-    console.log("created: " +id)
-    return { id, stream }
-}
-
-app.get("/createStation", (req,res)=>{
-    const { id, station } = generateStation();
-    playStation(station);
-    res.writeHead(200, "OK");
-})
 app.get("/moby", (req,res)=>{
     // console.log("uhvd")
     stations.get(32).file = path.join(__dirname, "audio","sa.mp3"),
     res.writeHead(200, "OK");
 })
-const generateStation = (ide) => {
-    const id = ide;
-    const station = {
-        //song 
-        //queue
-        //map of connected streams 
-        file: path.join(__dirname, "audio","cha.mp3"),
-        streams: new Map()
-    }
-    stations.set(id, station);
-    console.log(stations);
-    return {id, station}
-}
-const playStation = (station) => {
-    //check if station still exists (pass in id?)
-    const songReadable = fs.createReadStream(station.file);
-    const throttleTransformable = new Throttle(128000 / 4);
-    songReadable.pipe(throttleTransformable);
-    throttleTransformable.on('data', (chunk) => { broadcastToEveryStreams(chunk, station.streams, station.file) });
-    throttleTransformable.on('error', (e) => console.log(e))
-    throttleTransformable.on('end', () => playStation(station))
-}
-const broadcastToEveryStreams = (chunk, streams, file) => {
-    // console.log(file);
-    for (let [id, stream] of streams) {
-        stream.write(chunk) // We write to the client stream the new chunck of data
-    }
-}
+
+
 app.get("/audio/:id", (req,res) => {
     const filePath = path.join(__dirname, "audio", req.params.id + ".mp3");
     //check that file exists at path
@@ -156,6 +86,4 @@ app.get("/audio/:id", (req,res) => {
 
 app.listen(3000, () => {
     console.log('Server running on port 3000');
-    const { id, station } = generateStation(32);
-    playStation(station);
 });

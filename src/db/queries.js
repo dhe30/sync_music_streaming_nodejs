@@ -9,7 +9,7 @@ const initialize = async () => {
         CREATE TABLE IF NOT EXISTS queue (
             playlist_id UUID REFERENCES playlist (id),
             song_id UUID REFERENCES songs (id),
-            user_token UUID DEFAULT gen_random_uuid(),
+            user_token UUID,
             position INTEGER
         );
     `;
@@ -35,7 +35,8 @@ const initialize = async () => {
             date DATE,
             thumbnail TEXT
         );
-        ALTER TABLE playlist ADD COLUMN station_id UUID;
+        UPDATE playlist 
+        SET station_id = NULL;
     `;
     const createPlaylistSongs = `
         CREATE TABLE IF NOT EXISTS playlist_songs (
@@ -208,10 +209,13 @@ const get_next_in_queue = async ({playlist_id, user_token}) => {
         console.log("Inserted new song: ", newInLine.rows[0]);
 
         const pop = `
-            DELETE FROM queue 
-            WHERE position = (SELECT MIN(position) from queue WHERE user_token = $2 AND playlist_id = $1)
-            AND user_token = $2 AND playlist_id = $1
-            RETURNING song_id;
+            WITH next_song as (
+                DELETE FROM queue 
+                WHERE position = (SELECT MIN(position) from queue WHERE user_token = $2 AND playlist_id = $1)
+                AND user_token = $2 AND playlist_id = $1
+                RETURNING song_id
+            ) SELECT * from songs AS list
+            WHERE id = (SELECT song_id from next_song);
         `;
 
         console.log("Popping from queue...");
@@ -246,11 +250,23 @@ const updateStation = async ({playlist_id}) => {
     const makeStation = `
         UPDATE playlist 
         SET station_id = gen_random_uuid()
-        WHERE id = $1
+        WHERE id = $1 AND station_id IS NULL
         RETURNING *
         ;
     `;
     const result = await db.query(makeStation, [playlist_id]);
+    return result.rows[0];
+}
+
+const deleteStation = async ({playlist_id}) => {
+    const destroyStation = `
+        UPDATE playlist 
+        SET station_id = NULL
+        WHERE id = $1
+        RETURNING *
+        ;
+    `;
+    const result = await db.query(destroyStation, [playlist_id]);
     return result.rows[0];
 }
 
@@ -266,5 +282,6 @@ export default {
     test_queue,
     get_next_in_queue,
     get_playlist,
-    updateStation
+    updateStation,
+    deleteStation
 }
