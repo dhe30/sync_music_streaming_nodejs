@@ -6,8 +6,6 @@
 import express from "express"
 import fs from "fs"
 import path from "path"
-import { PassThrough } from 'stream'
-import Throttle from 'throttle';
 import cors from "cors";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -15,11 +13,15 @@ import 'dotenv/config';
 import db from './db/queries.js';
 import playlistRoutes from "./routes/playlist.js";
 import streamRoutes from "./routes/stream.js";
+import multer from "multer";
+import ffmpeg from "fluent-ffmpeg";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const stations = new Map()
+const storage = multer.memoryStorage();
+const upload = multer({storage: storage});
 const app = express();
+
 // const cors = require('cors'); // npm i -s cors - to install it in your express app
 app.use(cors());
 app.use('/static', express.static(path.join(__dirname)))
@@ -82,7 +84,35 @@ app.get("/audio/:id", (req,res) => {
     // res.end();
 })
 
+app.post('upload', upload.single('audio'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).send({message: "Don't do this!"});
+    }
 
+    const inputStream = streamifier.createReadStream(req.file.buffer);
+    const outputFilePath = path.join(__dirname, 'audio', `processed-${Date.now()}.mp3`);
+    const outputStream = fs.createWriteStream(outputFilePath);
+
+    ffmpeg(inputStream)
+        .audioBitrate(128)
+        .toFormat('mp3')
+        .on('end', () => {
+            console.log('File conversion completed'); 
+            res.status(200).send({
+                message: 'File uploaded and converted successfully!',
+                filePath: outputFilePath
+            });
+        })
+        .on('error', (err) => {
+            console.error('Error during conversion:', err);
+            res.status(500).send({ message: 'File conversion failed', error: err.message });
+        })
+        .pipe(outputStream, { end: true });
+});
+
+if (!fs.existsSync(path.join(__dirname, 'audio'))) {
+    fs.mkdirSync(path.join(__dirname, 'audio'));
+}
 
 app.listen(3000, () => {
     console.log('Server running on port 3000');

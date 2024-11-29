@@ -106,7 +106,7 @@ const playStation = (station, path) => {
     //check if station still exists (pass in id?) 
 
     const songReadable = fs.createReadStream(path); //update this
-    const throttleTransformable = new Throttle(128000 / 4);
+    const throttleTransformable = new Throttle(128000 / 4); //all uploaded songs are converted by ffmpeg to have a constant bitrate of 128k
     songReadable.pipe(throttleTransformable);
     throttleTransformable.on('data', (chunk) => { broadcastToEveryStreams(chunk, station.streams) });
     throttleTransformable.on('error', (e) => console.log(e))
