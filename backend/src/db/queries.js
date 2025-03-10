@@ -186,6 +186,8 @@ const get_next_in_queue = async ({playlist_id, user_token}) => {
             // (SELECT * from queue WHERE user_token = $2 AND playlist_id = $1) AS current
             //         OUTER RIGHT JOIN (SELECT * from playlist_songs WHERE playlist_id = $1) AS list 
             //         WHERE current.song_id = list.song_id
+
+        //q.user_token is NULL selects for songs not currently in queue
         const queueUp = `
             INSERT INTO queue (playlist_id, user_token, song_id, position)
             SELECT 

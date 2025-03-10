@@ -2,7 +2,7 @@ import pg from 'pg'
 import 'dotenv/config';
 
 const { Pool } = pg
-const db = new Pool({
+const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
@@ -10,9 +10,9 @@ const db = new Pool({
   port: process.env.DB_PORT,
 })
 
-db.on('error', (err, client) => {
+pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err)
   process.exit(-1)
 })
 
-export default db;
+export default pool;

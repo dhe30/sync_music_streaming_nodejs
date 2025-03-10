@@ -10,11 +10,12 @@ import cors from "cors";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import 'dotenv/config';
-import db from './db/queries.js';
-import playlistRoutes from "./routes/playlist.js";
-import streamRoutes from "./routes/stream.js";
 import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";
+
+import playlistRoutes from "./routes/playlist.js";
+import streamRoutes from "./routes/stream.js";
+import authRoutes from "./routes/auth.js"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,8 +28,7 @@ app.use(cors());
 app.use('/static', express.static(path.join(__dirname)))
 app.use('/playlist', playlistRoutes);
 app.use('/stream', streamRoutes);
-await db.initialize();
-
+app.use('/auth', authRoutes)
 
 // live station 13635a56-e871-479f-a716-cd0e50b05c91
 
